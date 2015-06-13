@@ -1,0 +1,42 @@
+--> WvDial: Internet dialer version 1.61
+--> Initializing modem.
+--> Sending: ATZ
+ATZ
+OK
+--> Sending: ATQ0 V1 E1 S0=0 &C1 &D2 +FCLASS=0
+ATQ0 V1 E1 S0=0 &C1 &D2 +FCLASS=0
+OK
+--> Sending: AT+CGDCONT=1,"IP","inet-gprs.mtel.bg"
+AT+CGDCONT=1,"IP","inet-gprs.mtel.bg"
+OK
+--> Modem initialized.
+--> Sending: ATDT*99#
+--> Waiting for carrier.
+ATDT*99#
+CONNECT 7200000
+--> Carrier detected.  Starting PPP immediately.
+--> Starting pppd at Sat Jun 13 16:13:16 2015
+--> Pid of pppd: 2550
+--> Using interface ppp0
+--> pppd: ðQõ¶àû§
+--> pppd: ðQõ¶àû§
+--> pppd: ðQõ¶àû§
+--> pppd: ðQõ¶àû§
+--> pppd: ðQõ¶àû§
+--> pppd: ðQõ¶àû§
+--> local  IP address 10.189.227.85
+--> pppd: ðQõ¶àû§
+--> remote IP address 10.64.64.64
+--> pppd: ðQõ¶àû§
+--> primary   DNS address 10.250.238.3
+--> pppd: ðQõ¶àû§
+--> secondary DNS address 10.250.238.4
+--> pppd: ðQõ¶àû§
+Caught signal 2:  Attempting to exit gracefully...
+--> Terminating on signal 15
+--> pppd: ðQõ¶àû§
+--> Connect time 0.5 minutes.
+--> pppd: ðQõ¶àû§
+--> pppd: ðQõ¶àû§
+--> pppd: ðQõ¶àû§
+--> Disconnecting at Sat Jun 13 16:13:45 2015
