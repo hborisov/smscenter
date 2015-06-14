@@ -30,6 +30,10 @@ def ping(serialPort):
 	print "PONG status: " + readATCommandResult(serialPort)
 	return
 
+def reboot():
+	print "Rebooting..."
+	return
+
 def readCommand(serialPort):
 	while True:
 		currentLine = serialPort.readline()
@@ -67,6 +71,8 @@ def handleNewSMS(serialPort, indication):
 		disconnect()
 	elif command.lower() == "ping":
 		ping(serialPort)
+	elif command.lower() == "reboot":
+		reboot()
 	return
 
 def deleteSMS(serialPort, SMSIndex):
