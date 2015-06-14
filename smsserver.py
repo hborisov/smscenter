@@ -6,14 +6,22 @@ import os
 from curses import ascii
 import zte
 
+pid = -1
+
 def connect():
 	print "Connecting..."
-	connectionStatus = subprocess.check_output("/home/pi/check_connection.py")
+	connectionStatus = subprocess.check_output("/home/pi/sms/check_connection.py")
 	print "Connection status is: " + connectionStatus
+	if connectionStatus != 0:
+		global pid
+		pid = subprocess.check_output("home/pi/sms/open_connection.py")
+		print "PID is: " + pid
 	return
 
 def disconnect():
 	print "Disconnecting..."
+	global pid
+	print "closing: " + pid
 	return
 
 def ping(modem):
