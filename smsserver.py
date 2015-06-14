@@ -8,6 +8,8 @@ import zte
 
 def connect():
 	print "Connecting..."
+	connectionStatus = subprocess.check_output("/home/pi/check_connection.py")
+	print "Connection status is: " + connectionStatus
 	return
 
 def disconnect():
@@ -21,6 +23,7 @@ def ping(modem):
 
 def reboot():
 	print "Rebooting..."
+	subprocess.call("sudo reboot")
 	return
 
 
