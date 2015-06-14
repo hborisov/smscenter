@@ -36,3 +36,38 @@ def setModemTextMode(modem):
 	else:
 		return False
 
+def sendSMS(modem, phoneNumber, text):
+	modem.write('AT+CMGS="%s"\r\n' %phoneNumber)
+	modem.write(text)
+	modem.write(ascii.ctrl('z'))
+
+	modem.readline()
+	CMGS = modem.readline()
+	modem.readline()
+	status = modem.readline()
+	if status.startswith("OK"):
+		return True
+	else:
+		print "Error sending SMS"
+
+def deleteSMS(modem, messageIndex):
+	modem.write("AT+CMGD=%s\r" %messageIndex)
+	modem.readline()
+	status = modem.readline()
+
+	if status.startswith("OK"):
+		return True
+	else:
+		return False
+
+def readSMS(modem, messageIndex):
+	modem.write("AT+CMGR=%s\r" %messageIndex)
+	header = modem.readline()
+	body = modem.readline()
+	modem.readline()
+	status = modem.readline()
+	if status.startswith("OK"):
+		return body
+	else:
+		print "Error reading SMS"
+
