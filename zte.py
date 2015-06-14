@@ -77,3 +77,15 @@ def readSMS(modem, messageIndex):
 	else:
 		print "Error reading SMS"
 
+def readLineFromModem(modem):
+	return modem.readline()
+
+def flushBuffer(modem):
+	modem.readlines()
+
+def getMessageIndex(newMessageString):
+	newSMSIndicationParts = newMessageString.split(":")
+	#print newSMSIndicationParts[1]
+	messageIndex = newSMSIndicationParts[1].split(",")[1]
+	#print messageIndex
+	return messageIndex
