@@ -1,4 +1,6 @@
 import serial
+from curses import ascii
+import time
 
 def openModem(modem, time):
 	print "Openning " + modem
@@ -37,18 +39,22 @@ def setModemTextMode(modem):
 		return False
 
 def sendSMS(modem, phoneNumber, text):
-	modem.write('AT+CMGS="%s"\r\n' %phoneNumber)
+	modem.write('AT+CMGS="%s"\r' %phoneNumber)
 	modem.write(text)
 	modem.write(ascii.ctrl('z'))
-
+	time.sleep(2)
+	
 	modem.readline()
-	CMGS = modem.readline()
+	modem.readline()
+	modem.readline()
+	cmgi = modem.readline()
 	modem.readline()
 	status = modem.readline()
 	if status.startswith("OK"):
 		return True
 	else:
 		print "Error sending SMS"
+		return False
 
 def deleteSMS(modem, messageIndex):
 	modem.write("AT+CMGD=%s\r" %messageIndex)
