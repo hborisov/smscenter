@@ -10,6 +10,7 @@ def main(arguments):
 	pid = int(arguments[1])
 	print pid
 	os.kill(pid, signal.SIGTERM)
+#	os.kill(pid, signal.SIGKILL)
 
 if __name__ == "__main__":
 	main(sys.argv)

@@ -12,16 +12,22 @@ def connect():
 	print "Connecting..."
 	connectionStatus = subprocess.check_output("/home/pi/sms/check_connection.py")
 	print "Connection status is: " + connectionStatus
-	if connectionStatus != 0:
+	print type(connectionStatus)
+	if connectionStatus != "0":
 		global pid
-		pid = subprocess.check_output("home/pi/sms/open_connection.py")
+		pid = subprocess.check_output("/home/pi/sms/open_connection.py")
 		print "PID is: " + pid
 	return
 
 def disconnect():
 	print "Disconnecting..."
 	global pid
-	print "closing: " + pid
+	print "closing: " + str(pid)
+	subprocess.check_output(["/home/pi/sms/open_connection.py", str(pid)])
+	
+	connectionStatus = subprocess.check_output("/home/pi/sms/check_connection.py")
+	print "Connection status is: " + connectionStatus
+	
 	return
 
 def ping(modem):
@@ -42,8 +48,15 @@ def main():
 		zte.setModemTextMode(modem)
 #		zte.sendSMS(modem, '0882506400', 'Pi is online. Waiting for commands.')
 		while True:
+			print modem.isOpen()
+			if not modem.isOpen():
+				modem = zte.openModem('/dev/ttyUSB1', 5)
+				print zte.flushBuffer(modem)
+				zte.setModemTextMode(modem)
+
 			line = zte.readLineFromModem(modem)
 			print line
+
 			if line.startswith("+CMTI"):
 				messageIndex = zte.getMessageIndex(line)
 				print messageIndex
@@ -57,14 +70,19 @@ def main():
 					
 					if command.lower() == "connect":
 						connect()
+						print "Connected"
+						zte.closeModem(modem)
 					elif command.lower() == "disconnect":
 						disconnect()
+						print "Disconnected"
+						zte.closeModem(modem)
 					elif command.lower() == "ping":
 						ping(modem)
 					elif command.lower() == "reboot":
 						reboot()
 				else:
 					print "Error. Invalid command format."
+
 
 
 		zte.closeModem(modem)
