@@ -5,9 +5,8 @@ import time
 def openModem(modem, time):
 	print "Openning " + modem
 	serialPort = serial.Serial(modem, 460800, timeout=5)
-	print serialPort
-	print serialPort.isOpen
 	if serialPort.isOpen():
+		print "Modem opened."
 		return serialPort
 	else:
 		print "Could not open modem"
@@ -16,6 +15,7 @@ def openModem(modem, time):
 def closeModem(modem):
 	if modem.isOpen():
 		modem.close()
+		print "Modem closed."
 	else:
 		print "Modem is not opened."
 
@@ -24,6 +24,7 @@ def checkModem(modem):
 	modem.readline()
 	status = modem.readline()
 	if status.startswith("OK"):
+		print "AT OK"
 		return True
 	else:
 		return False
@@ -34,6 +35,7 @@ def setModemTextMode(modem):
 	modem.readline()
 	status = modem.readline()
 	if status.startswith("OK"):
+		print "Modem set in text mode"
 		return True
 	else:
 		return False
@@ -49,8 +51,10 @@ def sendSMS(modem, phoneNumber, text):
 	modem.readline()
 	cmgi = modem.readline()
 	modem.readline()
+	modem.readline()
 	status = modem.readline()
 	if status.startswith("OK"):
+		print "SMS sent."
 		return True
 	else:
 		print "Error sending SMS"
@@ -62,17 +66,23 @@ def deleteSMS(modem, messageIndex):
 	status = modem.readline()
 
 	if status.startswith("OK"):
+		print "SMS deleted"
 		return True
 	else:
 		return False
 
 def readSMS(modem, messageIndex):
 	modem.write("AT+CMGR=%s\r" %messageIndex)
+	time.sleep(2)
+
+	modem.readline()
 	header = modem.readline()
 	body = modem.readline()
 	modem.readline()
 	status = modem.readline()
+	print status
 	if status.startswith("OK"):
+		print "SMS read."
 		return body
 	else:
 		print "Error reading SMS"
