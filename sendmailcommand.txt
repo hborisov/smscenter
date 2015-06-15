@@ -1,2 +1,0 @@
-uuencode 04-20150613204545-00.jpg picture.jpg | mail -s "picture" ico.borisov@gmail.com
-

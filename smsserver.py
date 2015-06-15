@@ -57,12 +57,18 @@ def reboot():
 def status(modem):
 	print "Sending status information..."
 
+	print "Getting disk usage..."
+	diskUsage = subprocess.check_output(["/bin/df", "-h", "/dev/root"])
+	diskUsage = diskUsage.split("\n")[1]
+	print diskUsage
+
+	print "Getting connection status"
 	connectionStatus = checkConnection()
 	if connectionStatus == 0:
 		connectionStatus = "CONNECTED"
 	else:
 		connectionStatus = "DISCONNECTED"
-	statusText = "Pi is %s, t is %s, prsr s %s" % (connectionStatus, "20.0", "95")
+	statusText = "Pi is %s, t is %s, prsr s %s\rdisk usage: %s" % (connectionStatus, "20.0", "95", diskUsage)
 	print statusText
 	print "Sending status..."
 	print zte.sendSMS(modem, "0882506400", statusText)
@@ -120,4 +126,3 @@ def main():
 
 if __name__ == '__main__':
 	main()
-
