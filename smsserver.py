@@ -4,10 +4,11 @@ import time
 import subprocess
 import os
 from curses import ascii
-import zte
+from zte import zte
 
 pid = -1
 child = None
+tunnelchild = None
 
 def checkConnection():
 	DEVNULL = open(os.devnull, 'wb')
@@ -73,6 +74,28 @@ def status(modem):
 	print "Sending status..."
 	print zte.sendSMS(modem, "0882506400", statusText)
 
+def openTunnel(remotePort, localPort, toAddress):
+	portSpecification = "%s:localhost:%s" % (remotePort, localPort)
+	print "Opening tunnel to: " + portSpecification
+
+	DEVNULL = open(os.devnull, 'wb')
+	try:
+		global tunnelchild
+		tunnelchild = subprocess.Popen(["ssh", "-nNT", "-R", portSpecification, toAddress], stdout=DEVNULL, stderr=DEVNULL)
+	except subprocess.CalledProcessError, ex:
+		print "Error opening tunnel"
+		return ex.returncode
+
+	print "Tunnel opened"
+
+def closeTunnel():
+	print "Closing tunnel"
+	global tunnelchild
+	tunnelchild.terminate()
+	tunnelchild.wait()
+	print "Tunnel closed"
+	
+
 def main():
 	modem = zte.openModem('/dev/ttyUSB1', 5)
 	if modem != -1:
@@ -114,6 +137,16 @@ def main():
 						reboot()
 					elif command.lower() == "status":
 						status(modem)
+					elif command.lower().startswith("tunnel"):
+						tunnelCommandParts = command.split(",")
+						remotePort = tunnelCommandParts[1]
+						localPort = tunnelCommandParts[2]
+						address = tunnelCommandParts[3]
+						openTunnel(remotePort, localPort, address)
+					elif  command.lower() == "closetunnel":
+						closeTunnel()
+					else:
+						print "Unknown command."
 				else:
 					print "Error. Invalid command format."
 

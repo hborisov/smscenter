@@ -1,0 +1,26 @@
+Openning /dev/ttyUSB1
+Modem opened.
+Error sending SMS
+Modem closed.
+Content-Type: multipart/related; boundary="===============0915946456=="
+MIME-Version: 1.0
+From: ico.borisov@gmail.com
+To: ico.borisov@gmail.com
+Subject: Sibd
+
+--===============0915946456==
+
+--===============0915946456==--
+Content-Type: multipart/related; boundary="===============0915946456=="
+MIME-Version: 1.0
+From: ico.borisov@gmail.com
+To: ico.borisov@gmail.com
+Subject: Sibd
+
+--===============0915946456==
+Content-Type: text/plain; charset="us-ascii"
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7bit
+
+BHuMAHuE!!!
+--===============0915946456==--
