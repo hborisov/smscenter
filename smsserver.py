@@ -7,39 +7,65 @@ from curses import ascii
 import zte
 
 pid = -1
+child = None
+
+def checkConnection():
+	DEVNULL = open(os.devnull, 'wb')
+	print "Checking connection status..."
+        try:
+            result = subprocess.check_call(["ping", "-c", "5", "www.abv.bg"],stdout=DEVNULL, stderr=DEVNULL)
+        except subprocess.CalledProcessError, ex: # error code <> 0 
+            result = ex.returncode
+
+        DEVNULL.close()
+	print "Connection status: " + str(result)
+	return result
 
 def connect():
 	print "Connecting..."
-	connectionStatus = subprocess.check_output("/home/pi/sms/check_connection.py")
-	print "Connection status is: " + connectionStatus
-	print type(connectionStatus)
-	if connectionStatus != "0":
-		global pid
-		pid = subprocess.check_output("/home/pi/sms/open_connection.py")
-		print "PID is: " + pid
-	return
+	DEVNULL = open(os.devnull, 'wb')
+
+	connectionIsOpen = checkConnection()
+
+	if connectionIsOpen != 0:
+		global child
+		try:
+			child = subprocess.Popen(["wvdial", "3gconnect"], stdout=DEVNULL, stderr=DEVNULL)
+		except subprocess.CalledProcessError, ex: # error code <> 0 
+			print "Error starting wvdial."
+	    		print ex.returncode
+	    		return -1
+	else:
+		print "Connection is already opened."
+
 
 def disconnect():
 	print "Disconnecting..."
-	global pid
-	print "closing: " + str(pid)
-	subprocess.check_output(["/home/pi/sms/open_connection.py", str(pid)])
-	
-	connectionStatus = subprocess.check_output("/home/pi/sms/check_connection.py")
-	print "Connection status is: " + connectionStatus
-	
-	return
+	global child
+	print "closing: " + str(child.pid)
+	child.terminate()	
+	child.wait()	
 
 def ping(modem):
 	print "pong..."
 	zte.sendSMS(modem, "0882506400", "pong")
-	return
 
 def reboot():
 	print "Rebooting..."
-	subprocess.call("sudo reboot")
-	return
+	subprocess.call(["sudo", "/sbin/reboot"])
 
+def status(modem):
+	print "Sending status information..."
+
+	connectionStatus = checkConnection()
+	if connectionStatus == 0:
+		connectionStatus = "CONNECTED"
+	else:
+		connectionStatus = "DISCONNECTED"
+	statusText = "Pi is %s, t is %s, prsr s %s" % (connectionStatus, "20.0", "95")
+	print statusText
+	print "Sending status..."
+	print zte.sendSMS(modem, "0882506400", statusText)
 
 def main():
 	modem = zte.openModem('/dev/ttyUSB1', 5)
@@ -80,6 +106,8 @@ def main():
 						ping(modem)
 					elif command.lower() == "reboot":
 						reboot()
+					elif command.lower() == "status":
+						status(modem)
 				else:
 					print "Error. Invalid command format."
 
