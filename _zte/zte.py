@@ -1,32 +1,36 @@
 import serial
 from curses import ascii
 import time
+import logging
+
+logger = logging.getLogger(__name__)
 
 def openModem(modem, time):
-	print "Openning " + modem
+	logger.info("Openning " + modem)
 	serialPort = serial.Serial(modem, 460800, timeout=5)
 	if serialPort.isOpen():
-		print "Modem opened."
+		logger.info("Modem opened.")
 		return serialPort
 	else:
-		print "Could not open modem"
+		logger.error("Could not open modem")
 		return -1
 
 def closeModem(modem):
 	if modem.isOpen():
 		modem.close()
-		print "Modem closed."
+		logger.info("Modem closed.")
 	else:
-		print "Modem is not opened."
+		logger.error("Modem is not opened.")
 
 def checkModem(modem):
 	modem.write("AT\r")
 	modem.readline()
 	status = modem.readline()
 	if status.startswith("OK"):
-		print "AT OK"
+		logger.info("AT OK")
 		return True
 	else:
+		logger.error("AT ERROR")
 		return False
 				
 
@@ -35,7 +39,7 @@ def setModemTextMode(modem):
 	modem.readline()
 	status = modem.readline()
 	if status.startswith("OK"):
-		print "Modem set in text mode"
+		logger.info("Modem set in text mode")
 		return True
 	else:
 		return False
@@ -54,10 +58,10 @@ def sendSMS(modem, phoneNumber, text):
 	modem.readline()
 	status = modem.readline()
 	if status.startswith("OK"):
-		print "SMS sent."
+		logger.info("SMS sent.")
 		return True
 	else:
-		print "Error sending SMS"
+		logger.error("Error sending SMS")
 		return False
 
 def deleteSMS(modem, messageIndex):
@@ -66,7 +70,7 @@ def deleteSMS(modem, messageIndex):
 	status = modem.readline()
 
 	if status.startswith("OK"):
-		print "SMS deleted"
+		logger.info("SMS deleted")
 		return True
 	else:
 		return False
@@ -80,12 +84,12 @@ def readSMS(modem, messageIndex):
 	body = modem.readline()
 	modem.readline()
 	status = modem.readline()
-	print status
+	logger.info("Status is: " + status.strip())
 	if status.startswith("OK"):
-		print "SMS read."
+		logger.info("SMS read.")
 		return body
 	else:
-		print "Error reading SMS"
+		logger.error("Error reading SMS")
 
 def readLineFromModem(modem):
 	return modem.readline()
@@ -94,8 +98,8 @@ def flushBuffer(modem):
 	modem.readlines()
 
 def getMessageIndex(newMessageString):
-	newSMSIndicationParts = newMessageString.split(":")
-	#print newSMSIndicationParts[1]
+	newSMSIndicationParts = newMessageString.strip().split(":")
+	logger.debug(newSMSIndicationParts[1])
 	messageIndex = newSMSIndicationParts[1].split(",")[1]
-	#print messageIndex
+	logger.debug(messageIndex)
 	return messageIndex
