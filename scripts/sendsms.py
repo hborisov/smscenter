@@ -11,15 +11,15 @@ def sendsms(phoneNumber, text):
 	print ser.name
 
 	ser.write("AT\r\n")
-	line = ser.readline()
-	line = ser.readline()
+	line = ser.readline(size=None, eol='\r\n')
+#	line = ser.readline()
 	print line
 
 	ser.write("AT+CMGF=1\r\n")
-	line = ser.readline()
-	line = ser.readline()
+	line = ser.readline(size=None, eol='\r\n')
+#	line = ser.readline()
 	print line
-	print ser.readline()
+#	print ser.readline()
 
 	ser.write('AT+CMGS="%s"\r\n' %phoneNumber)
 	ser.write(text)
