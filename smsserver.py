@@ -115,16 +115,21 @@ def status(modem, sender):
 	logger.info("Sending status...")
 	logger.info(zte.sendSMS(modem, sender, statusText))
 
-def openTunnel(remotePort, localPort, toAddress):
+def openTunnel(remotePort, localPort, toAddress, password):
 	portSpecification = "%s:localhost:%s" % (remotePort, localPort)
 	logger.info("Opening tunnel to: " + portSpecification)
 
 	DEVNULL = open(os.devnull, 'wb')
 	try:
 		global tunnelchild
-		tunnelchild = subprocess.Popen(["ssh", "-nNT", "-R", portSpecification, toAddress], stdout=DEVNULL, stderr=DEVNULL)
+		tunnelchild = subprocess.Popen(['sshpass', '-p', password, 'ssh', '-nNT', '-R', portSpecification, toAddress], stdout=DEVNULL, stderr=DEVNULL)
+
+		pidfile = open(BASEDIR + '/tunnel.pid', 'w')
+		pidfile.write(str(tunnelchild.pid))
+		pidfile.close()
+
 	except subprocess.CalledProcessError, ex:
-		logger.info("Error opening tunnel")
+		logger.exception(ex)
 		return ex.returncode
 
 	logger.info("Tunnel opened")
@@ -214,13 +219,14 @@ def main():
 						logger.info("Status reported")
 					elif command.lower().startswith("tunnel"):
 						tunnelCommandParts = command.split(",")
-						if len(tunnelCommandParts) != 4:
+						if len(tunnelCommandParts) != 5:
 							logger.error("Wrong format of open tunnel command")
 						else: 
 							remotePort = tunnelCommandParts[1]
 							localPort = tunnelCommandParts[2]
 							address = tunnelCommandParts[3]
-							openTunnel(remotePort, localPort, address)
+							password = tunnelCommandParts[4]
+							openTunnel(remotePort, localPort, address, password)
 							logger.info("Tunnel opened")
 					elif  command.lower() == "closetunnel":
 						closeTunnel()
