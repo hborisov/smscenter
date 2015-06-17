@@ -7,6 +7,7 @@ from curses import ascii
 from zte import zte
 import logging
 import logging.config
+import ConfigParser
 
 pid = -1
 child = None
@@ -14,6 +15,10 @@ tunnelchild = None
 
 logging.config.fileConfig('/home/pi/sms/logging_config.ini')
 logger = logging.getLogger('smsserver')
+
+config = ConfigParser.SafeConfigParser()
+config.read("smsserver.conf")
+
 
 def checkConnection():
 	DEVNULL = open(os.devnull, 'wb')
@@ -27,10 +32,10 @@ def checkConnection():
 	logger.info("Connection status: " + str(result))
 	return result
 
-def connect():
+def connect(sender):
 	logger.info("Connecting...")
-	DEVNULL = open(os.devnull, 'wb')
 
+	DEVNULL = open(os.devnull, 'wb')
 	connectionIsOpen = checkConnection()
 
 	if connectionIsOpen != 0:
@@ -47,20 +52,22 @@ def connect():
 
 def disconnect():
 	logger.info("Disconnecting...")
+
 	global child
 	logger.info("closing: " + str(child.pid))
 	child.terminate()	
 	child.wait()	
 
-def ping(modem):
+def ping(modem, sender):
 	logger.info("Pong...")
-	zte.sendSMS(modem, "0882506400", "pong")
+
+	zte.sendSMS(modem, sender, "pong")
 
 def reboot():
 	logger.info("Rebooting...")
 	subprocess.call(["sudo", "/sbin/reboot"])
 
-def status(modem):
+def status(modem, sender):
 	logger.info("Sending status information...")
 
 	logger.info("Getting disk usage...")
@@ -77,7 +84,7 @@ def status(modem):
 	statusText = "Pi is %s, t is %s, prsr s %s\rdisk usage: %s" % (connectionStatus, "20.0", "95", diskUsage)
 	logger.info(statusText)
 	logger.info("Sending status...")
-	logger.info(zte.sendSMS(modem, "0882506400", statusText))
+	logger.info(zte.sendSMS(modem, sender, statusText))
 
 def openTunnel(remotePort, localPort, toAddress):
 	portSpecification = "%s:localhost:%s" % (remotePort, localPort)
@@ -87,7 +94,6 @@ def openTunnel(remotePort, localPort, toAddress):
 	try:
 		global tunnelchild
 		tunnelchild = subprocess.Popen(["ssh", "-nNT", "-R", portSpecification, toAddress], stdout=DEVNULL, stderr=DEVNULL)
-#		tunnelchild.wait()
 	except subprocess.CalledProcessError, ex:
 		logger.info("Error opening tunnel")
 		return ex.returncode
@@ -96,87 +102,118 @@ def openTunnel(remotePort, localPort, toAddress):
 
 def closeTunnel():
 	logger.info("Closing tunnel")
+
 	global tunnelchild
 	tunnelchild.terminate()
 	tunnelchild.wait()
+
 	logger.info("Tunnel closed")
 	
-
-def main():
-	modem = zte.openModem('/dev/ttyUSB1', 5)
+def openModem():
+	usbPort = config.get('main', 'usb_port')
+	modem = zte.openModem(usbPort, 5)
 	if modem != -1:
 		logger.info(zte.flushBuffer(modem))
 		zte.setModemTextMode(modem)
-		zte.sendSMS(modem, '0882506400', 'Pi is online. Waiting for commands.')
-		while True:
-			try:
-				isOpen = modem.isOpen()
-				logger.debug("Modem is open? %s" % isOpen)
-				if not isOpen:
-					modem = zte.openModem('/dev/ttyUSB1', 5)
-					logger.info(zte.flushBuffer(modem))
-					zte.setModemTextMode(modem)
+	
+	return modem
 
-				line = zte.readLineFromModem(modem)
-				if line != "":
-					logger.info(line.strip())
+def checkSender(sender):
+	global notificationList
+        if sender not in notificationList:
+                logger.error("Sender not in notification list. Aborting")
+                return False
 
-				if line.startswith("+CMTI"):
-					messageIndex = zte.getMessageIndex(line)
-					logger.info("Message Index: " + str(messageIndex))
-					messageBody = zte.readSMS(modem, messageIndex)
-					logger.info("Message Body: " + messageBody.strip())
-					zte.deleteSMS(modem, messageIndex)
+	return True
 
-					if messageBody.lower().startswith("cmd"):
-						command = messageBody.split(":")[1].strip()
-						logger.info("Command is: " + command)
+
+def main():
+	modem = openModem()
+	global notificationList
+	sendGreetings = config.getboolean("main", "send_greetings")
+	if sendGreetings:
+		for recepient in notificationList:
+			zte.sendSMS(modem, recepient, 'Pi is online. Waiting for commands.')
+
+	while True:
+		try:
+			isOpen = modem.isOpen()
+			logger.debug("Modem is open? %s" % isOpen)
+			if not isOpen:
+				modem = modemOpen()
+
+			line = zte.readLineFromModem(modem)
+			if line != "":
+				logger.info(line.strip())
+
+			if line.startswith("+CMTI"):
+				messageIndex = zte.getMessageIndex(line)
+				logger.info("Message Index: " + str(messageIndex))
+				messageHeaderAndBody = zte.readSMS(modem, messageIndex)
+				logger.info("Message Body: " + messageHeaderAndBody.strip())
+				zte.deleteSMS(modem, messageIndex)
 					
-						if command.lower() == "connect":
-							connect()
-							logger.info("Connected")
-							zte.closeModem(modem)
-						elif command.lower() == "disconnect":
-							disconnect()
-							logger.info("Disconnected")
-							zte.closeModem(modem)
-						elif command.lower() == "ping":
-							ping(modem)
-							logger.info("Pong")
-						elif command.lower() == "reboot":
-							reboot()
-							logger.info("System going for a reboot")
-						elif command.lower() == "status":
-							status(modem)
-							logger.info("Status reported")
-						elif command.lower().startswith("tunnel"):
-							tunnelCommandParts = command.split(",")
-							if len(tunnelCommandParts) != 4:
-								logger.error("Wrong format of open tunnel command")
-							else: 
-								remotePort = tunnelCommandParts[1]
-								localPort = tunnelCommandParts[2]
-								address = tunnelCommandParts[3]
-								openTunnel(remotePort, localPort, address)
-								logger.info("Tunnel opened")
-						elif  command.lower() == "closetunnel":
-							closeTunnel()
-							logger.info("Tunnel closed")
-						else:
-							logger.info("Unknown command.")
+				if "-" in messageHeaderAndBody:
+					sender = messageHeaderAndBody.split("-")[0]
+					if not checkSender(sender):
+						continue
+
+					messageBody = messageHeaderAndBody.split("-")[1]
+				else:
+					messageBody = messageHeaderAndBody
+
+				if messageBody.lower().startswith("cmd"):
+					command = messageBody.split(":")[1].strip()
+					logger.info("Command is: " + command)
+					
+					if command.lower() == "connect":
+						connect(sender)
+						logger.info("Connected")
+						zte.closeModem(modem)
+					elif command.lower() == "disconnect":
+						disconnect(sender)
+						logger.info("Disconnected")
+						zte.closeModem(modem)
+					elif command.lower() == "ping":
+						ping(modem, sender)
+						logger.info("Pong")
+					elif command.lower() == "reboot":
+						reboot(sender)
+						logger.info("System going for a reboot")
+					elif command.lower() == "status":
+						status(modem, sender)
+						logger.info("Status reported")
+					elif command.lower().startswith("tunnel"):
+						tunnelCommandParts = command.split(",")
+						if len(tunnelCommandParts) != 4:
+							logger.error("Wrong format of open tunnel command")
+						else: 
+							remotePort = tunnelCommandParts[1]
+							localPort = tunnelCommandParts[2]
+							address = tunnelCommandParts[3]
+							openTunnel(remotePort, localPort, address, sender)
+							logger.info("Tunnel opened")
+					elif  command.lower() == "closetunnel":
+						closeTunnel(sender)
+						logger.info("Tunnel closed")
 					else:
-						logger.info("Error. Invalid command format.")
+						logger.info("Unknown command.")
+				else:
+					logger.info("Error. Invalid command format.")
 
 
-			except Exception, e:
-				logger.exception(e)
-				time.sleep(5)
-				zte.closeModem(modem)
-				continue
-		zte.closeModem(modem)
-
+		except Exception, e:
+			logger.exception(e)
+			time.sleep(5)
+			zte.closeModem(modem)
+			continue
+	
+	zte.closeModem(modem)
 	return
 
 
 if __name__ == '__main__':
+	global notificationList
+	notificationList = config.get("main", "notification_list").split(",")
 	main()
+

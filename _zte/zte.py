@@ -81,13 +81,18 @@ def readSMS(modem, messageIndex):
 
 	modem.readline()
 	header = modem.readline()
+	logger.info(header)
 	body = modem.readline()
 	modem.readline()
 	status = modem.readline()
 	logger.info("Status is: " + status.strip())
 	if status.startswith("OK"):
 		logger.info("SMS read.")
-		return body
+		headerParts = header.split(",")
+		if len(headerParts) > 1:
+			return "-".join([headerParts[1].strip('"'), body])
+		else:
+			return body
 	else:
 		logger.error("Error reading SMS")
 
