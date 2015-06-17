@@ -8,16 +8,22 @@ from zte import zte
 import logging
 import logging.config
 import ConfigParser
+import sys
+from os.path import dirname
 
 pid = -1
 child = None
 tunnelchild = None
 
-logging.config.fileConfig('/home/pi/sms/logging_config.ini')
+
+BASEDIR = dirname(sys.argv[0])
+print BASEDIR
+
+logging.config.fileConfig(BASEDIR + '/logging_config.ini')
 logger = logging.getLogger('smsserver')
 
 config = ConfigParser.SafeConfigParser()
-config.read("smsserver.conf")
+config.read(BASEDIR + '/smsserver.conf')
 
 
 def checkConnection():
@@ -32,7 +38,7 @@ def checkConnection():
 	logger.info("Connection status: " + str(result))
 	return result
 
-def connect(sender):
+def connect():
 	logger.info("Connecting...")
 
 	DEVNULL = open(os.devnull, 'wb')
@@ -140,7 +146,7 @@ def main():
 			isOpen = modem.isOpen()
 			logger.debug("Modem is open? %s" % isOpen)
 			if not isOpen:
-				modem = modemOpen()
+				modem = openModem()
 
 			line = zte.readLineFromModem(modem)
 			if line != "":
@@ -167,18 +173,18 @@ def main():
 					logger.info("Command is: " + command)
 					
 					if command.lower() == "connect":
-						connect(sender)
+						connect()
 						logger.info("Connected")
 						zte.closeModem(modem)
 					elif command.lower() == "disconnect":
-						disconnect(sender)
+						disconnect()
 						logger.info("Disconnected")
 						zte.closeModem(modem)
 					elif command.lower() == "ping":
 						ping(modem, sender)
 						logger.info("Pong")
 					elif command.lower() == "reboot":
-						reboot(sender)
+						reboot()
 						logger.info("System going for a reboot")
 					elif command.lower() == "status":
 						status(modem, sender)
@@ -191,10 +197,10 @@ def main():
 							remotePort = tunnelCommandParts[1]
 							localPort = tunnelCommandParts[2]
 							address = tunnelCommandParts[3]
-							openTunnel(remotePort, localPort, address, sender)
+							openTunnel(remotePort, localPort, address)
 							logger.info("Tunnel opened")
 					elif  command.lower() == "closetunnel":
-						closeTunnel(sender)
+						closeTunnel()
 						logger.info("Tunnel closed")
 					else:
 						logger.info("Unknown command.")
