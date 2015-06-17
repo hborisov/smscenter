@@ -76,7 +76,7 @@ def disconnect():
 		pid = connectionpid.read()
 		logger.info('pid is %s' % str(pid))
 		os.kill(int(pid), signal.SIGTERM)
-		os.waitpid(int(pid), 0)
+		time.sleep(3)
 		try:
 			os.kill(int(pid), 0)
 			os.kill(int(pid), signal.SIGKILL)
