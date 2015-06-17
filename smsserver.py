@@ -138,10 +138,25 @@ def closeTunnel():
 	logger.info("Closing tunnel")
 
 	global tunnelchild
-	tunnelchild.terminate()
-	tunnelchild.wait()
+	if tunnelchild != None:
+		tunnelchild.terminate()
+		tunnelchild.wait()
+	else:
+		pidfile = open(BASEDIR + '/tunnel.pid', 'r')
+		pid = pidfile.read()
+		logger.info('Tunnel pid is %s' % str(pid))
 
-	logger.info("Tunnel closed")
+		os.kill(int(pid), signal.SIGTERM)
+		time.sleep(3)
+		try:
+			os.kill(int(pid), 0)
+			os.kill(int(pid), signal.SIGKILL)
+			os.kill(int(pid), 0)
+		except Exception, e:
+			logger.info('Tunnel successfully killed')
+			connectionpid.close()
+			os.remove(BASEDIR + '/tunnel.pid')
+
 	
 def openModem():
 	usbPort = config.get('main', 'usb_port')
