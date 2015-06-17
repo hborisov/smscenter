@@ -3,6 +3,7 @@ import serial
 import time
 import subprocess
 import os
+import signal
 from curses import ascii
 from zte import zte
 import logging
@@ -48,6 +49,9 @@ def connect():
 		global child
 		try:
 			child = subprocess.Popen(["wvdial", "3gconnect"], stdout=DEVNULL, stderr=DEVNULL)
+			global BASEDIR
+			connectionpid = open(BASEDIR + '/connection.pid', 'w')
+			connectionpid.write(str(child.pid))
 		except subprocess.CalledProcessError, ex: # error code <> 0 
 			logger.info("Error starting wvdial.")
 	    		logger.info(ex.returncode)
@@ -60,9 +64,27 @@ def disconnect():
 	logger.info("Disconnecting...")
 
 	global child
-	logger.info("closing: " + str(child.pid))
-	child.terminate()	
-	child.wait()	
+	if child != None:
+		logger.info("closing: " + str(child.pid))
+		child.terminate()	
+		child.wait()	
+	else:
+		logger.info('Disconnecting by pid')
+
+		global BASEDIR
+		connectionpid = open(BASEDIR + '/connection.pid', 'r')
+		pid = connectionpid.read()
+		logger.info('pid is %s' % str(pid))
+		os.kill(int(pid), signal.SIGTERM)
+		try:
+			os.kill(int(pid), 0)
+			os.kill(int(pid), signal.SIGKILL)
+			os.kill(int(pid), 0)
+		except Exception, e:
+			logger.info('process successfully killed')
+			connectionpid.close()
+			os.remove(BASEDIR + '/connection.pid')
+
 
 def ping(modem, sender):
 	logger.info("Pong...")
