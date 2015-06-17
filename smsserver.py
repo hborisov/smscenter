@@ -87,6 +87,7 @@ def openTunnel(remotePort, localPort, toAddress):
 	try:
 		global tunnelchild
 		tunnelchild = subprocess.Popen(["ssh", "-nNT", "-R", portSpecification, toAddress], stdout=DEVNULL, stderr=DEVNULL)
+#		tunnelchild.wait()
 	except subprocess.CalledProcessError, ex:
 		logger.info("Error opening tunnel")
 		return ex.returncode
@@ -108,64 +109,70 @@ def main():
 		zte.setModemTextMode(modem)
 		zte.sendSMS(modem, '0882506400', 'Pi is online. Waiting for commands.')
 		while True:
-			logger.debug("Modem is open? %s" % modem.isOpen())
-			if not modem.isOpen():
-				modem = zte.openModem('/dev/ttyUSB1', 5)
-				logger.info(zte.flushBuffer(modem))
-				zte.setModemTextMode(modem)
+			try:
+				isOpen = modem.isOpen()
+				logger.debug("Modem is open? %s" % isOpen)
+				if not isOpen:
+					modem = zte.openModem('/dev/ttyUSB1', 5)
+					logger.info(zte.flushBuffer(modem))
+					zte.setModemTextMode(modem)
 
-			line = zte.readLineFromModem(modem)
-			if line != "":
-				logger.info(line.strip())
+				line = zte.readLineFromModem(modem)
+				if line != "":
+					logger.info(line.strip())
 
-			if line.startswith("+CMTI"):
-				messageIndex = zte.getMessageIndex(line)
-				logger.info("Message Index: " + str(messageIndex))
-				messageBody = zte.readSMS(modem, messageIndex)
-				logger.info("Message Body: " + messageBody.strip())
-				zte.deleteSMS(modem, messageIndex)
+				if line.startswith("+CMTI"):
+					messageIndex = zte.getMessageIndex(line)
+					logger.info("Message Index: " + str(messageIndex))
+					messageBody = zte.readSMS(modem, messageIndex)
+					logger.info("Message Body: " + messageBody.strip())
+					zte.deleteSMS(modem, messageIndex)
 
-				if messageBody.lower().startswith("cmd"):
-					command = messageBody.split(":")[1].strip()
-					logger.info("Command is: " + command)
+					if messageBody.lower().startswith("cmd"):
+						command = messageBody.split(":")[1].strip()
+						logger.info("Command is: " + command)
 					
-					if command.lower() == "connect":
-						connect()
-						logger.info("Connected")
-						zte.closeModem(modem)
-					elif command.lower() == "disconnect":
-						disconnect()
-						logger.info("Disconnected")
-						zte.closeModem(modem)
-					elif command.lower() == "ping":
-						ping(modem)
-						logger.info("Pong")
-					elif command.lower() == "reboot":
-						reboot()
-						logger.info("System going for a reboot")
-					elif command.lower() == "status":
-						status(modem)
-						logger.info("Status reported")
-					elif command.lower().startswith("tunnel"):
-						tunnelCommandParts = command.split(",")
-						if len(tunnelCommandParts) != 4:
-							logger.error("Wrong format of open tunnel command")
-						else: 
-							remotePort = tunnelCommandParts[1]
-							localPort = tunnelCommandParts[2]
-							address = tunnelCommandParts[3]
-							openTunnel(remotePort, localPort, address)
-							logger.info("Tunnel opened")
-					elif  command.lower() == "closetunnel":
-						closeTunnel()
-						logger.info("Tunnel closed")
+						if command.lower() == "connect":
+							connect()
+							logger.info("Connected")
+							zte.closeModem(modem)
+						elif command.lower() == "disconnect":
+							disconnect()
+							logger.info("Disconnected")
+							zte.closeModem(modem)
+						elif command.lower() == "ping":
+							ping(modem)
+							logger.info("Pong")
+						elif command.lower() == "reboot":
+							reboot()
+							logger.info("System going for a reboot")
+						elif command.lower() == "status":
+							status(modem)
+							logger.info("Status reported")
+						elif command.lower().startswith("tunnel"):
+							tunnelCommandParts = command.split(",")
+							if len(tunnelCommandParts) != 4:
+								logger.error("Wrong format of open tunnel command")
+							else: 
+								remotePort = tunnelCommandParts[1]
+								localPort = tunnelCommandParts[2]
+								address = tunnelCommandParts[3]
+								openTunnel(remotePort, localPort, address)
+								logger.info("Tunnel opened")
+						elif  command.lower() == "closetunnel":
+							closeTunnel()
+							logger.info("Tunnel closed")
+						else:
+							logger.info("Unknown command.")
 					else:
-						logger.info("Unknown command.")
-				else:
-					logger.info("Error. Invalid command format.")
+						logger.info("Error. Invalid command format.")
 
 
-
+			except Exception, e:
+				logger.exception(e)
+				time.sleep(5)
+				zte.closeModem(modem)
+				continue
 		zte.closeModem(modem)
 
 	return
