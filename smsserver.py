@@ -110,7 +110,17 @@ def status(modem, sender):
 		connectionStatus = "CONNECTED"
 	else:
 		connectionStatus = "DISCONNECTED"
-	statusText = "Pi is %s, t is %s, prsr s %s\rdisk usage: %s" % (connectionStatus, "20.0", "95", diskUsage)
+
+	logger.info('Getting tunnel status')
+	global BASEDIR
+	if tunnelchild != None: 
+		tunnelStatus = 'OPENED'
+	elif tunnelchild == None and os.path.isfile(BASEDIR + '/tunnel.pid'):
+		tunnelStatus = 'OPENED'
+	else:
+		tunnelStatus = 'CLOSED'
+		
+	statusText = "Pi is %s, t is %s, prsr s %s\rdisk usage: %s\rtunnel status: %s" % (connectionStatus, "20.0", "95", diskUsage, tunnelStatus)
 	logger.info(statusText)
 	logger.info("Sending status...")
 	logger.info(zte.sendSMS(modem, sender, statusText))
