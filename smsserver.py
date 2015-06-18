@@ -154,7 +154,7 @@ def closeTunnel():
 			os.kill(int(pid), 0)
 		except Exception, e:
 			logger.info('Tunnel successfully killed')
-			connectionpid.close()
+			pidfile.close()
 			os.remove(BASEDIR + '/tunnel.pid')
 
 	
