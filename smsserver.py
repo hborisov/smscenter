@@ -166,6 +166,7 @@ def closeTunnel():
 			logger.info('Tunnel successfully killed')
 			pidfile.close()
 			os.remove(BASEDIR + '/tunnel.pid')
+			tunnelchild = None			
 
 	
 def openModem():
