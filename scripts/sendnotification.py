@@ -13,14 +13,23 @@ from email import Encoders
 from email.mime.base import MIMEBase
 
 if __name__ == "__main__":
-	fileName = sys.argv[1]
-	phoneNumber = "0882506400"
+	if len(sys.argv) > 1:
+		fileName = sys.argv[1]
+	else:
+		fileName = None
+
+	phoneNumber = ["0882506400", "0888205537"]
 	smsText = "BHuMAHuE!"
-	
+
 	modem = zte.openModem('/dev/ttyUSB1', 2)
-	zte.setModemTextMode(modem)
-	zte.sendSMS(modem, phoneNumber, smsText)
-	zte.closeModem(modem)
+	print zte.setModemTextMode(modem)
+	for phone in phoneNumber:
+		print "sending message to %s" % phone
+		print zte.sendSMS(modem, phone, smsText)
+		print "message sent to %s" % phone
+	print zte.closeModem(modem)
+
+
 	FROM = "ico.borisov@gmail.com"	
 	TO = "ico.borisov@gmail.com, bornel@abv.bg"
 	MESSAGE = "BHuMAHuE!!!"
@@ -28,15 +37,17 @@ if __name__ == "__main__":
 	msg = MIMEMultipart('related')
 	msg["From"] = FROM
 	msg["To"] = TO
-	msg["Subject"] = MESSAGE + " - " + basename(fileName)
+	msg["Subject"] = MESSAGE #+ " - " + basename(fileName)
 	msg.attach(MIMEText(MESSAGE))
 
-	atPart = MIMEBase('application', "octet-stream")
-	attach = open(fileName, 'rb')
-	atPart.set_payload(attach.read())
-	Encoders.encode_base64(atPart)
-	atPart.add_header('Content-Disposition', 'attachment; filename="%s"' % basename(fileName))
-	msg.attach(atPart)
+
+	if fileName != None:	
+		atPart = MIMEBase('application', "octet-stream")
+		attach = open(fileName, 'rb')
+		atPart.set_payload(attach.read())
+		Encoders.encode_base64(atPart)
+		atPart.add_header('Content-Disposition', 'attachment; filename="%s"' % basename(fileName))
+		msg.attach(atPart)
 
 	server = smtplib.SMTP("smtp.gmail.com", 587)
 	server.ehlo()
