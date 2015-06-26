@@ -17,12 +17,12 @@ if __name__ == "__main__":
 	phoneNumber = "0882506400"
 	smsText = "BHuMAHuE!"
 	
-#	modem = zte.openModem('/dev/ttyUSB1', 2)
-#	zte.setModemTextMode(modem)
-#	zte.sendSMS(modem, phoneNumber, smsText)
-#	zte.closeModem(modem)
+	modem = zte.openModem('/dev/ttyUSB1', 2)
+	zte.setModemTextMode(modem)
+	zte.sendSMS(modem, phoneNumber, smsText)
+	zte.closeModem(modem)
 	FROM = "ico.borisov@gmail.com"	
-	TO = "ico.borisov@gmail.com"
+	TO = "ico.borisov@gmail.com, bornel@abv.bg"
 	MESSAGE = "BHuMAHuE!!!"
 
 	msg = MIMEMultipart('related')
